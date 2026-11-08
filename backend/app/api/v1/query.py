@@ -108,6 +108,8 @@ async def execute_query(req: QueryRequest):
             pipeline_trace=pipeline_trace
         )
 
+    except HTTPException:
+        raise
     except Exception as e:
         log_event("ERROR", f"[{request_id}] Query processing failed: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Failed to process query: {str(e)}")
@@ -136,3 +138,4 @@ async def get_query_trace(request_id: str):
         tokens_usage=trace_data["tokens_usage"],
         trace=trace_data["trace"]
     )
+

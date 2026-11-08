@@ -42,3 +42,4 @@ async def health_check_root():
 async def health_check_v1():
     """Versioned health check endpoint for microservice health probes."""
     return get_health_status()
+

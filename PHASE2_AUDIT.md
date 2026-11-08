@@ -168,3 +168,4 @@ flowchart TD
    Expand test suite covering upload, query, trace, auth, Ollama mocking, and persistence across restarts.
 9. **Step 9: Documentation**:
    Produce `API_DOCUMENTATION.md`, `PHASE2_TEST_REPORT.md`, updated `.env.example`, and `README.md`.
+

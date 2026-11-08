@@ -49,6 +49,42 @@ class PandasStructuredDataRetriever(BaseStructuredDataRetriever):
 
         # Convert top results to RetrievedChunk
         results: List[RetrievedChunk] = []
+
+        # If aggregate request detected, calculate and prepend summary statistics
+        query_lower = query.lower()
+        if re.search(r'\b(average|mean|total|count|sum|highest|lowest|min|max|statistics)\b', query_lower):
+            numeric_cols = [c for c in filtered_df.columns if pd.api.types.is_numeric_dtype(filtered_df[c])]
+            if numeric_cols:
+                agg_lines = [
+                    f"File: {file_name} | Computed Statistics for Query",
+                    f"Total Matching Records: {len(filtered_df)}"
+                ]
+                for c in numeric_cols[:4]:
+                    col_name = c.replace('_', ' ').title()
+                    mean_val = round(float(filtered_df[c].mean()), 2)
+                    min_val = round(float(filtered_df[c].min()), 2)
+                    max_val = round(float(filtered_df[c].max()), 2)
+                    sum_val = round(float(filtered_df[c].sum()), 2)
+                    agg_lines.append(f"{col_name} — Average: {mean_val}, Min: {min_val}, Max: {max_val}, Total Sum: {sum_val}")
+
+                agg_text = "\n".join(agg_lines)
+                results.append(
+                    RetrievedChunk(
+                        id=f"{document_id}_computed_aggregates",
+                        text=agg_text,
+                        metadata={
+                            "source_type": "csv",
+                            "document_id": document_id,
+                            "document_name": file_name,
+                            "chunk_id": f"{document_id}_computed_aggregates",
+                            "row_number": 1,
+                            "retrieval_method": "structured_pandas"
+                        },
+                        score=0.99,
+                        rank=1
+                    )
+                )
+
         subset = filtered_df.head(top_k)
 
         for rank, (idx, row) in enumerate(subset.iterrows(), start=1):
@@ -149,7 +185,8 @@ class PandasStructuredDataRetriever(BaseStructuredDataRetriever):
                     if preferred in numeric_cols:
                         sort_col = preferred
                         break
-                filtered = filtered.sort_values(by=sort_col, ascending=False)
+                is_ascending = bool(re.search(r'\b(lowest|minimum|min|least|bottom|worst)\b', query_lower))
+                filtered = filtered.sort_values(by=sort_col, ascending=is_ascending)
             return filtered
 
         return None

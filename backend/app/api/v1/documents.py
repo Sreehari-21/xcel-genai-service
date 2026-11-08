@@ -49,3 +49,4 @@ async def delete_document(document_id: str):
         "status": "success",
         "message": f"Document '{document_id}' and all associated vector embeddings deleted successfully."
     }
+

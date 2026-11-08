@@ -19,14 +19,9 @@ from app.api.v1.health import router as v1_health_router
 async def lifespan(app: FastAPI):
     log_event("GENERAL", f"Xcel RAG GenAI Microservice v{settings.service_version} starting up")
     log_event("GENERAL", f"Configured Embedding Model: {settings.embedding_model}")
-    provider = settings.llm_provider.lower()
-    if provider == "ollama":
-        active_model = f"Ollama ({settings.ollama_model}) at {settings.ollama_base_url}"
-    elif provider in ["claude", "anthropic"]:
-        active_model = f"Claude ({settings.claude_model})"
-    else:
-        active_model = f"OpenAI ({settings.openai_model})"
-    log_event("GENERAL", f"Active LLM: {active_model}")
+    from app.services.ollama_service import ollama_service
+    is_loaded = ollama_service.verify_model_loaded()
+    log_event("OLLAMA", f"Active LLM: Ollama ({ollama_service.model}) at {ollama_service.base_url} [Verified Loaded: {is_loaded}]")
     log_event("GENERAL", f"Vector Store directory: {settings.chroma_dir}")
     log_event("GENERAL", f"Service Auth Enabled: {bool(settings.service_api_key)}")
     yield

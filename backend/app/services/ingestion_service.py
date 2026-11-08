@@ -123,3 +123,4 @@ class IngestionService:
             raise HTTPException(status_code=422, detail=f"Failed to process {ext.upper()}: {err}")
 
 ingestion_service = IngestionService()
+

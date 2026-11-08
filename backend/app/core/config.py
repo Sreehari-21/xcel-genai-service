@@ -5,7 +5,7 @@ from pydantic_settings import BaseSettings
 from pydantic import Field
 
 class Settings(BaseSettings):
-    llm_provider: str = Field(default="openai", validation_alias="LLM_PROVIDER")
+    llm_provider: str = Field(default="ollama", validation_alias="LLM_PROVIDER")
     openai_api_key: Optional[str] = Field(default=None, validation_alias="OPENAI_API_KEY")
     openai_model: str = Field(default="gpt-4o", validation_alias="OPENAI_MODEL")
     
@@ -13,7 +13,7 @@ class Settings(BaseSettings):
     claude_model: str = Field(default="claude-3-5-sonnet-20241022", validation_alias="CLAUDE_MODEL")
     
     ollama_base_url: str = Field(default="http://localhost:11434", validation_alias="OLLAMA_BASE_URL")
-    ollama_model: str = Field(default="llama3.2", validation_alias="OLLAMA_MODEL")
+    ollama_model: str = Field(default="qwen2.5:7b", validation_alias="OLLAMA_MODEL")
     
     service_api_key: Optional[str] = Field(default=None, validation_alias="SERVICE_API_KEY")
     sqlite_db_path: str = Field(default="./data/processed/xcel_rag.db", validation_alias="SQLITE_DB_PATH")
@@ -33,7 +33,7 @@ class Settings(BaseSettings):
     cors_origins: List[str] = ["http://localhost:5173", "http://127.0.0.1:5173", "http://localhost:3000", "*"]
 
     model_config = {
-        "env_file": ".env",
+        "env_file": [".env", "backend/.env"],
         "env_file_encoding": "utf-8",
         "extra": "ignore"
     }

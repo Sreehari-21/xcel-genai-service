@@ -81,9 +81,98 @@ tests/test_retrieval.py::test_mixed_hybrid_retrieval PASSED              [100%]
 11. **`test_backend_client_example_workflow`**: Tests `XcelGenAIClient` from `integration/backend_client_example.py` by exercising health check, document listing, query execution, and diagnostic trace retrieval directly against the FastAPI application.
 
 ### B. Local LLM / Ollama Provider Compatibility (`tests/test_ollama.py`)
-1. **`test_ollama_service_prompt_construction_and_success`**: Validates message formatting, prompt evaluation token counting, and response synthesis.
-2. **`test_ollama_service_connection_error_fallback`**: Simulates local Ollama daemon being offline (`httpx.ConnectError`), verifying user-friendly guidance output without server crash.
-3. **`test_ollama_service_timeout_fallback`**: Simulates slow model response (`httpx.TimeoutException`), verifying graceful timeout messaging.
+1. **`test_ollama_service_prompt_construction_and_success`**: Validates message formatting, prompt evaluation token counting, and response synthesis with `qwen2.5:7b`.
+2. **`test_ollama_service_connection_error_raises_502`**: Simulates local Ollama daemon offline (`httpx.ConnectError`), verifying it raises HTTP 502 Bad Gateway instead of masking the error under HTTP 200.
+3. **`test_ollama_service_timeout_raises_504`**: Simulates slow model response (`httpx.TimeoutException`), verifying it raises HTTP 504 Gateway Timeout instead of masking the error under HTTP 200.
+
+---
+
+## 4. Live Ollama (`qwen2.5:7b`) Execution Logs
+
+Below are the actual end-to-end execution logs from a live run against local Ollama (`http://localhost:11434` with model `qwen2.5:7b`):
+
+### 1. Health & Startup Verification
+```json
+GET /health -> HTTP 200 OK
+{
+  "status": "healthy",
+  "service": "xcel-rag",
+  "version": "2.0.0",
+  "llm_provider": "ollama",
+  "configured_model": "qwen2.5:7b",
+  "openai_api_key_configured": false,
+  "anthropic_api_key_configured": false,
+  "vector_store": {
+    "type": "chromadb",
+    "stats": {
+      "pdf_documents": 3,
+      "csv_records": 7,
+      "csv_schemas": 3
+    }
+  }
+}
+```
+
+### 2. Live PDF Semantic Query
+```
+Query: "What is First Normal Form 1NF according to the database lecture notes?"
+Scope: "pdf"
+
+Stage Logs:
+[QUERY] [req_69f739957a3e] Received query: 'What is First Normal Form 1NF according to the database lecture notes?' (scope=pdf)
+[QUERY] Query analysis result: pdf_only
+[RERANKING] Completed reranking; returned 3 top chunks
+[RETRIEVAL] Retrieval complete: 3 chunks formatted into context (518 chars)
+[OLLAMA] Sending generation request to Ollama (http://localhost:11434) with model: qwen2.5:7b
+[OLLAMA] Generated answer via Ollama (qwen2.5:7b). Input tokens: 392, Output tokens: 95
+[QUERY] Saved persistent trace for request_id: req_69f739957a3e
+
+Response:
+HTTP 200 OK
+{
+  "request_id": "req_69f739957a3e",
+  "answer": "The provided context does not contain specific information about First Normal Form (1NF)...",
+  "execution_metrics": {
+    "llm_provider": "ollama",
+    "llm_model": "qwen2.5:7b",
+    "tokens_usage": {"input_tokens": 392, "output_tokens": 95}
+  },
+  "sources": [
+    {"source_type": "pdf", "file_name": "dbms.pdf", "page": 1, "score": 0.3195}
+  ]
+}
+```
+
+### 3. Live CSV Numerical Query
+```
+Query: "Which student scored the highest marks in DBMS?"
+Scope: "csv"
+
+Stage Logs:
+[QUERY] [req_2488e5de0a1b] Received query: 'Which student scored the highest marks in DBMS?' (scope=csv)
+[QUERY] Query analysis result: csv_only
+[RETRIEVAL] StructuredDataRetriever matched 4 rows for query 'Which student scored the highest marks in DBMS?' in students.csv
+[RERANKING] Completed reranking; returned 3 top chunks
+[RETRIEVAL] Retrieval complete: 3 chunks formatted into context (625 chars)
+[OLLAMA] Sending generation request to Ollama (http://localhost:11434) with model: qwen2.5:7b
+[OLLAMA] Generated answer via Ollama (qwen2.5:7b). Input tokens: 526, Output tokens: 55
+[QUERY] Saved persistent trace for request_id: req_2488e5de0a1b
+
+Response:
+HTTP 200 OK
+{
+  "request_id": "req_2488e5de0a1b",
+  "answer": "The student who scored the highest marks in DBMS is Anu, with a score of 95. This information is derived from the CSV file students.csv, specifically from the row containing Anu's details [File: students.csv, Row: 3].",
+  "execution_metrics": {
+    "llm_provider": "ollama",
+    "llm_model": "qwen2.5:7b",
+    "tokens_usage": {"input_tokens": 526, "output_tokens": 55}
+  },
+  "sources": [
+    {"source_type": "csv", "file_name": "students.csv", "row": 3, "score": 0.4607}
+  ]
+}
+```
 
 ### C. Ingestion & Structured Relational Querying (`tests/test_pdf.py`, `tests/test_csv.py`)
 1. **`test_pdf_extraction` & `test_structure_aware_chunking`**: Verified typography heading extraction, table formatting, and sentence boundary recursive splitting.
@@ -115,3 +204,4 @@ The evaluation runner (`tests/test_eval.py`) evaluated retrieval quality against
 * **Hit@5**: **80.00%**
 * **MRR (Mean Reciprocal Rank)**: **0.8000**
 * Both metrics exceed the benchmark threshold ($\ge 0.50$), verifying high retrieval precision across both document types.
+

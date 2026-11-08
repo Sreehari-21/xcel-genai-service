@@ -323,3 +323,4 @@ For existing frontend components and scripts, the following legacy routes remain
 | `GET /documents` | `GET /api/v1/documents` |
 | `DELETE /documents/{id}` | `DELETE /api/v1/documents/{id}` |
 | `GET /health` | `GET /api/v1/health` |
+

@@ -1,3 +1,5 @@
+import pytest
+from fastapi import HTTPException
 from unittest.mock import patch, MagicMock
 import httpx
 from app.services.ollama_service import ollama_service
@@ -23,22 +25,23 @@ def test_ollama_service_prompt_construction_and_success():
         assert result["usage"]["output_tokens"] == 25
         assert result.get("error") is None or result.get("error") is False
 
-def test_ollama_service_connection_error_fallback():
+def test_ollama_service_connection_error_raises_502():
     with patch("httpx.Client.post", side_effect=httpx.ConnectError("Connection refused")):
-        result = ollama_service.generate_answer(
-            query="What is normalization?",
-            context="Some test context"
-        )
+        with pytest.raises(HTTPException) as exc_info:
+            ollama_service.generate_answer(
+                query="What is normalization?",
+                context="Some test context"
+            )
+        assert exc_info.value.status_code == 502
+        assert "Cannot connect to Ollama" in exc_info.value.detail
 
-        assert "Ollama Service Unavailable" in result["answer"]
-        assert result.get("error") is True
-
-def test_ollama_service_timeout_fallback():
+def test_ollama_service_timeout_raises_504():
     with patch("httpx.Client.post", side_effect=httpx.TimeoutException("Read timed out")):
-        result = ollama_service.generate_answer(
-            query="What is normalization?",
-            context="Some test context"
-        )
+        with pytest.raises(HTTPException) as exc_info:
+            ollama_service.generate_answer(
+                query="What is normalization?",
+                context="Some test context"
+            )
+        assert exc_info.value.status_code == 504
+        assert "timed out" in exc_info.value.detail.lower()
 
-        assert "timed out" in result["answer"].lower()
-        assert result.get("error") is True
