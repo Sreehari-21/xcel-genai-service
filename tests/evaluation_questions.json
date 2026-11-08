@@ -1,0 +1,27 @@
+[
+  {
+    "question": "What is normalization in database systems?",
+    "expected_source": "dbms.pdf",
+    "expected_source_type": "pdf"
+  },
+  {
+    "question": "Which students scored above 90 in DBMS?",
+    "expected_source": "students.csv",
+    "expected_source_type": "csv"
+  },
+  {
+    "question": "What columns and data are available in the students dataset?",
+    "expected_source": "students.csv",
+    "expected_source_type": "csv_schema"
+  },
+  {
+    "question": "Explain first normal form (1NF) and second normal form (2NF).",
+    "expected_source": "dbms.pdf",
+    "expected_source_type": "pdf"
+  },
+  {
+    "question": "Who scored 95 in the DBMS subject?",
+    "expected_source": "students.csv",
+    "expected_source_type": "csv"
+  }
+]

@@ -1,0 +1,11 @@
+student_id,name,semester,subject,marks,grade
+101,Akhil,6,DBMS,85,A
+102,Rahul,6,DBMS,72,B
+103,Anu,6,DBMS,95,A+
+104,Priya,6,OS,88,A
+105,Sneha,6,DBMS,92,A+
+106,Vikram,6,Networks,78,B+
+107,Kavya,6,DBMS,96,A+
+108,Rohan,6,DBMS,64,C
+109,Meera,6,OS,91,A+
+110,Arjun,6,DBMS,89,A
