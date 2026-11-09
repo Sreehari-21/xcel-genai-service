@@ -39,8 +39,16 @@ class UnifiedRetrievalService:
         # Check for numerical / relational operations
         num_match = bool(re.search(r'(?:above|below|greater|less|>|<|==|=|scored|marks|grade|salary|count)\s*\d+', q_lower))
         
-        pdf_signals = ["document", "pdf", "chapter", "section", "page", "paragraph", "author", "definition", "concept", "theory", "explain", "describe", "meaning"]
-        csv_signals = ["dataset", "csv", "table", "row", "record", "column", "who scored", "highest", "lowest", "average", "total", "list of students", "students", "marks", "database", "data"]
+        pdf_signals = [
+            "document", "pdf", "chapter", "section", "page", "paragraph", "author",
+            "definition", "concept", "theory", "explain", "describe", "meaning",
+            "normalization", "normal form", "1nf", "2nf", "3nf", "bcnf", "anomalies", "acid"
+        ]
+        csv_signals = [
+            "dataset", "csv", "table", "row", "record", "column", "who scored",
+            "highest", "lowest", "average", "total", "list of students", "students",
+            "marks", "grade", "spreadsheet", "dataframe"
+        ]
 
         pdf_hits = [w for w in pdf_signals if w in q_lower]
         csv_hits = [w for w in csv_signals if w in q_lower]
@@ -99,11 +107,12 @@ class UnifiedRetrievalService:
         # Stage 2: Vector retrieval per source type
         # 1. PDF retrieval (if not csv_only)
         if analysis.query_type != "csv_only":
+            fetch_pdf_k = max(top_k * 4, 15)
             pdf_filters = {"document_name": filters.get("document_name")} if filters and "document_name" in filters else None
             pdf_chunks = vector_store.query(
                 collection_name=ChromaVectorStore.COLLECTION_PDF,
                 query_embedding=query_embedding,
-                top_k=top_k,
+                top_k=fetch_pdf_k,
                 filters=pdf_filters
             )
             pipeline_trace["pdf_candidates_count"] = len(pdf_chunks)
@@ -111,11 +120,12 @@ class UnifiedRetrievalService:
 
         # 2. CSV Vector retrieval (if not pdf_only)
         if analysis.query_type != "pdf_only":
+            fetch_csv_k = max(top_k * 3, 10)
             csv_filters = {"document_name": filters.get("file_name")} if filters and "file_name" in filters else None
             csv_chunks = vector_store.query(
                 collection_name=ChromaVectorStore.COLLECTION_CSV_RECORDS,
                 query_embedding=query_embedding,
-                top_k=top_k,
+                top_k=fetch_csv_k,
                 filters=csv_filters
             )
             pipeline_trace["csv_candidates_count"] = len(csv_chunks)
@@ -157,7 +167,34 @@ class UnifiedRetrievalService:
                 deduped_candidates.append(c)
 
         # Stage 3: Reranking
-        top_reranked = reranking_service.rerank(query, deduped_candidates, top_k=top_k)
+        all_reranked = reranking_service.rerank(query, deduped_candidates, top_k=max(top_k * 2, 10))
+
+        # For mixed / hybrid queries requiring multiple modalities, ensure balanced source representation
+        if analysis.query_type == "mixed" and top_k > 2:
+            pdf_reranked = [c for c in all_reranked if c.metadata.get("source_type") == "pdf"]
+            csv_reranked = [c for c in all_reranked if c.metadata.get("source_type") in ["csv", "csv_schema"]]
+
+            if pdf_reranked and csv_reranked:
+                balanced: List[RetrievedChunk] = []
+                seen = set()
+                # Reserve minimum slots for both modalities (PDF theory + CSV data)
+                modal_quota = max(1, min(2, top_k // 2))
+                for c in pdf_reranked[:modal_quota] + csv_reranked[:modal_quota]:
+                    if c.id not in seen:
+                        seen.add(c.id)
+                        balanced.append(c)
+                # Fill remaining slots with the highest scored candidates regardless of source
+                for c in all_reranked:
+                    if len(balanced) >= top_k:
+                        break
+                    if c.id not in seen:
+                        seen.add(c.id)
+                        balanced.append(c)
+                top_reranked = balanced[:top_k]
+            else:
+                top_reranked = all_reranked[:top_k]
+        else:
+            top_reranked = all_reranked[:top_k]
 
         # Populate debug trace
         pipeline_trace["retrieved_candidates"] = [

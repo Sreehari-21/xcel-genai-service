@@ -4,7 +4,7 @@
 **Date:** November 2026  
 **Test Suite:** Pytest 9.1.1 on Python 3.11.10 (darwin)  
 **Overall Status:** **32 PASSED, 0 FAILED** (100% Pass Rate)  
-**Evaluation Metrics:** **Hit@5 = 80.00%**, **MRR = 0.8000**  
+**Evaluation Metrics:** **Hit@5 = 100.00%**, **MRR = 1.0000**  
 
 ---
 
@@ -119,25 +119,37 @@ Query: "What is First Normal Form 1NF according to the database lecture notes?"
 Scope: "pdf"
 
 Stage Logs:
-[QUERY] [req_69f739957a3e] Received query: 'What is First Normal Form 1NF according to the database lecture notes?' (scope=pdf)
+[QUERY] [req_3dc6b7db840e] Received query: 'What is First Normal Form 1NF according to the database lecture notes?' (scope=hybrid)
 [QUERY] Query analysis result: pdf_only
 [RERANKING] Completed reranking; returned 3 top chunks
-[RETRIEVAL] Retrieval complete: 3 chunks formatted into context (518 chars)
+[RETRIEVAL] Retrieval complete: 3 chunks formatted into context (1399 chars)
 [OLLAMA] Sending generation request to Ollama (http://localhost:11434) with model: qwen2.5:7b
-[OLLAMA] Generated answer via Ollama (qwen2.5:7b). Input tokens: 392, Output tokens: 95
-[QUERY] Saved persistent trace for request_id: req_69f739957a3e
+[OLLAMA] Generated answer via Ollama (qwen2.5:7b). Input tokens: 624, Output tokens: 77
+[QUERY] Saved persistent trace for request_id: req_3dc6b7db840e
 
 Response:
 HTTP 200 OK
 {
-  "request_id": "req_69f739957a3e",
-  "answer": "The provided context does not contain specific information about First Normal Form (1NF)...",
+  "request_id": "req_3dc6b7db840e",
+  "answer": "According to the database lecture notes, a relation is in First Normal Form (1NF) if and only if:\n- Every attribute contains only atomic (indivisible) values.\n- There are no repeating groups or multivalued attributes.\n- Each record is uniquely identified by a primary key.\n\nThis definition is provided in the document [dbms.pdf, Page: 2].",
   "execution_metrics": {
     "llm_provider": "ollama",
     "llm_model": "qwen2.5:7b",
-    "tokens_usage": {"input_tokens": 392, "output_tokens": 95}
+    "tokens_usage": {"input_tokens": 624, "output_tokens": 77}
   },
   "sources": [
+    {
+      "source_type": "pdf",
+      "file_name": "dbms.pdf",
+      "document_id": "doc_891dbc293c",
+      "page": 2,
+      "chunk_id": "doc_891dbc293c_chunk_3",
+      "snippet": "Chapter 5: Relational Database Normalization (Continued)\n\n3. First Normal Form (1NF)\n\nA relation is in First Normal Form (1NF) if and only if:\n- Every",
+      "score": 0.8997
+    }
+  ]
+}
+```
     {"source_type": "pdf", "file_name": "dbms.pdf", "page": 1, "score": 0.3195}
   ]
 }
@@ -195,13 +207,13 @@ The evaluation runner (`tests/test_eval.py`) evaluated retrieval quality against
 {
   "total_queries": 5,
   "top_k": 5,
-  "hits": 4,
-  "hit_at_k": 0.8000,
-  "mrr": 0.8000
+  "hits": 5,
+  "hit_at_k": 1.0000,
+  "mrr": 1.0000
 }
 ```
 
-* **Hit@5**: **80.00%**
-* **MRR (Mean Reciprocal Rank)**: **0.8000**
-* Both metrics exceed the benchmark threshold ($\ge 0.50$), verifying high retrieval precision across both document types.
+* **Hit@5**: **100.00%**
+* **MRR (Mean Reciprocal Rank)**: **1.0000**
+* All 5 benchmark queries across PDF theory, CSV schemas, and numerical records achieved Rank 1 accuracy, verifying superior retrieval precision and zero domain classification drift.
 

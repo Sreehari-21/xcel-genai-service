@@ -60,19 +60,19 @@ Health check probe for orchestrators, load balancers, and backend clients. Does 
   "status": "healthy",
   "service": "xcel-rag",
   "version": "2.0.0",
-  "llm_provider": "openai",
-  "configured_model": "gpt-4o",
+  "llm_provider": "ollama",
+  "configured_model": "qwen2.5:7b",
   "openai_model": "gpt-4o",
-  "openai_api_key_configured": true,
+  "openai_api_key_configured": false,
   "anthropic_api_key_configured": false,
   "embedding_model": "all-MiniLM-L6-v2",
   "auth_enabled": false,
   "vector_store": {
     "type": "chromadb",
     "stats": {
-      "pdf_documents": 12,
-      "csv_records": 48,
-      "csv_schemas": 2
+      "pdf_documents": 6,
+      "csv_records": 10,
+      "csv_schemas": 1
     }
   },
   "total_documents": 2
@@ -239,12 +239,12 @@ Executes hybrid retrieval across PDF text chunks, CSV rows, and CSV schemas, fol
     "structured_candidates_count": 3
   },
   "execution_metrics": {
-    "total_latency_ms": 118.4,
-    "llm_provider": "openai",
-    "llm_model": "gpt-4o",
+    "total_latency_ms": 3118.0,
+    "llm_provider": "ollama",
+    "llm_model": "qwen2.5:7b",
     "tokens_usage": {
-      "input_tokens": 420,
-      "output_tokens": 85
+      "input_tokens": 526,
+      "output_tokens": 55
     }
   },
   "conversation_id": "session_student_advisor_99"
@@ -265,12 +265,12 @@ Retrieves execution diagnostics for authorized developers and performance tracin
   "query": "Which students scored above 90 in DBMS?",
   "scope": "hybrid",
   "created_at": "2026-11-08T14:22:15.123456",
-  "total_latency_ms": 118.4,
-  "llm_provider": "openai",
-  "llm_model": "gpt-4o",
+  "total_latency_ms": 3118.0,
+  "llm_provider": "ollama",
+  "llm_model": "qwen2.5:7b",
   "tokens_usage": {
-    "input_tokens": 420,
-    "output_tokens": 85
+    "input_tokens": 526,
+    "output_tokens": 55
   },
   "trace": {
     "query": "Which students scored above 90 in DBMS?",
@@ -306,11 +306,47 @@ Retrieves execution diagnostics for authorized developers and performance tracin
 | `401 Unauthorized` | Missing or invalid `X-API-Key` / `Bearer` token. | `{"detail": "Unauthorized: Invalid or missing API key."}` |
 | `404 Not Found` | Requested document or trace ID does not exist. | `{"detail": "Diagnostic trace for request_id '...' not found."}` |
 | `422 Unprocessable` | Malformed multipart body or corrupted PDF/CSV file. | `{"detail": "Failed to process PDF: ..."}` |
+| `502 Bad Gateway` | Local Ollama daemon unreachable or returned an upstream error. | `{"detail": "Cannot connect to Ollama at http://localhost:11434..."}` |
+| `504 Gateway Timeout` | LLM generation exceeded timeout threshold (>60s). | `{"detail": "Request to Ollama model 'qwen2.5:7b' timed out..."}` |
 | `500 Internal Error`| Unhandled runtime error. | `{"detail": "An internal server error occurred while processing the request."}` |
 
 ---
 
-## 5. Backward Compatibility (Legacy Routes)
+## 5. Quick Start cURL Examples
+
+### 1. Health Probe
+```bash
+curl -X GET http://localhost:8000/api/v1/health
+```
+
+### 2. Upload Document (PDF / CSV)
+```bash
+curl -X POST http://localhost:8000/api/v1/documents/upload \
+  -H "X-API-Key: your_service_api_key_if_configured" \
+  -F "file=@data/samples/dbms.pdf"
+```
+
+### 3. Query (Hybrid Search)
+```bash
+curl -X POST http://localhost:8000/api/v1/query \
+  -H "Content-Type: application/json" \
+  -H "X-API-Key: your_service_api_key_if_configured" \
+  -d '{
+    "query": "What is First Normal Form 1NF according to the database lecture notes?",
+    "top_k": 3,
+    "scope": "hybrid"
+  }'
+```
+
+### 4. Fetch Execution Trace
+```bash
+curl -X GET http://localhost:8000/api/v1/query/req_d07f4ea472ac/trace \
+  -H "X-API-Key: your_service_api_key_if_configured"
+```
+
+---
+
+## 6. Backward Compatibility (Legacy Routes)
 
 For existing frontend components and scripts, the following legacy routes remain fully functional:
 

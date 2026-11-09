@@ -154,7 +154,7 @@ xcel/
 ### Step 1: Set Up Python Virtual Environment
 
 ```bash
-cd /Users/sreehariharshan/Desktop/xcel
+cd xcel
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -r backend/requirements.txt
@@ -168,28 +168,37 @@ Copy `.env.example` to `.env`:
 cp .env.example .env
 ```
 
-Select your preferred LLM provider in `.env`:
+The template is pre-configured for local **Ollama** using `qwen2.5:7b` (no cloud API keys required).
 
-#### Option A: OpenAI (Cloud)
+#### Option A: Ollama (Local / Offline - Recommended Default)
+1. **Install Ollama:**
+   - **macOS:** `brew install ollama`
+   - **Linux:** `curl -fsSL https://ollama.com/install.sh | sh`
+   - **Windows:** Download from [https://ollama.com/download](https://ollama.com/download)
+2. **Start Daemon & Pull Model:**
+   ```bash
+   ollama serve
+   ollama pull qwen2.5:7b
+   ```
+3. **Environment Settings (`.env`):**
+```env
+LLM_PROVIDER=ollama
+OLLAMA_BASE_URL=http://localhost:11434
+OLLAMA_MODEL=qwen2.5:7b
+```
+
+#### Option B: OpenAI (Cloud Alternative)
 ```env
 LLM_PROVIDER=openai
 OPENAI_API_KEY=sk-proj-your-openai-key-here
 OPENAI_MODEL=gpt-4o
 ```
 
-#### Option B: Anthropic Claude (Cloud)
+#### Option C: Anthropic Claude (Cloud Alternative)
 ```env
 LLM_PROVIDER=claude
 ANTHROPIC_API_KEY=sk-ant-api03-your-anthropic-key-here
 CLAUDE_MODEL=claude-3-5-sonnet-20241022
-```
-
-#### Option C: Ollama (Local / Offline)
-Ensure Ollama is running (`ollama serve`) and pull the model (`ollama pull llama3.2`):
-```env
-LLM_PROVIDER=ollama
-OLLAMA_BASE_URL=http://localhost:11434
-OLLAMA_MODEL=llama3.2
 ```
 
 #### Microservice Authentication (Optional)

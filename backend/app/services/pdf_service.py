@@ -1,4 +1,5 @@
 import os
+import re
 from abc import ABC, abstractmethod
 from typing import List, Dict, Any, Optional
 import pymupdf
@@ -112,9 +113,16 @@ class PyMuPDFParser(BasePDFParser):
 
                     total_extracted_chars += len(full_block_text)
 
-                    # Heading heuristic: font size noticeably larger than 11pt or bold short line
+                    # Heading heuristic: font size noticeably larger than 11pt, bold short line, or numbered section title
+                    first_line = block_text_lines[0].strip() if block_text_lines else ""
+                    is_numbered_title = bool(
+                        re.match(r"^(?:\d+\.|\d+\.\d+|Chapter\s+\d+|Section\s+\d+)\s+[A-Za-z]", first_line)
+                        and len(first_line) < 120
+                        and not first_line.endswith(".")
+                    )
+
                     is_heading_candidate = (
-                        (block_max_font_size >= 13.0 or (is_bold and len(full_block_text) < 120))
+                        (block_max_font_size >= 13.0 or (is_bold and len(full_block_text) < 120) or is_numbered_title)
                         and len(full_block_text.splitlines()) <= 2
                         and not full_block_text.endswith(".")
                     )
@@ -129,9 +137,31 @@ class PyMuPDFParser(BasePDFParser):
                                 section_type="heading"
                             )
                         )
+                    elif is_numbered_title and len(block_text_lines) > 1:
+                        # Block begins with a numbered section title followed by body text
+                        current_heading = first_line
+                        sections.append(
+                            ExtractedSection(
+                                page_number=page_num,
+                                heading=current_heading,
+                                content=first_line,
+                                section_type="heading"
+                            )
+                        )
+                        remaining_text = "\n".join(block_text_lines[1:]).strip()
+                        if remaining_text:
+                            is_list = any(line.strip().startswith(("-", "*", "•")) for line in block_text_lines[1:])
+                            sections.append(
+                                ExtractedSection(
+                                    page_number=page_num,
+                                    heading=current_heading,
+                                    content=remaining_text,
+                                    section_type="list" if is_list else "paragraph"
+                                )
+                            )
                     else:
                         # Detect lists
-                        is_list = any(line.strip().startswith(("-", "*", "•", "1.", "2.", "3.", "4.", "5.")) for line in block_text_lines)
+                        is_list = any(line.strip().startswith(("-", "*", "•")) for line in block_text_lines)
                         sections.append(
                             ExtractedSection(
                                 page_number=page_num,
