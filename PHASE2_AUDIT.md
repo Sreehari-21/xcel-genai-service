@@ -1,6 +1,6 @@
 # Phase 2 Engineering Audit: Xcel RAG Platform
 
-**Author:** Senior AI/ML Engineer & Backend Architect  
+**Author:** Sreehari
 **Date:** November 2026  
 **Project:** Xcel RAG — Multi-Modal RAG Platform for PDF + CSV Data  
 **Status:** In Progress — Stabilization & API Standardization  
