@@ -1,6 +1,6 @@
 # Phase 2 Engineering Test Report: Xcel RAG Platform
 
-**Author:** Senior AI/ML Engineer & Backend Architect  
+**Author:** Sreehari
 **Date:** November 2026  
 **Test Suite:** Pytest 9.1.1 on Python 3.11.10 (darwin)  
 **Overall Status:** **32 PASSED, 0 FAILED** (100% Pass Rate)  
