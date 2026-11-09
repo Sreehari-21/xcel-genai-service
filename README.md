@@ -60,7 +60,7 @@ A production-ready, modular **Retrieval-Augmented Generation (RAG) Microservice*
 
 - **Unified Document Ingestion (`POST /api/v1/documents/upload`)**: Single endpoint supporting both PDF documents and structured CSV datasets with automatic file validation, heading extraction, table conversion, and row serialization.
 - **Hybrid Numerical / Relational Filtering**: Directly parses operators (`>`, `<`, `==`, `above 90`, `scored 95`) and queries cached DataFrames via Pandas, eliminating vector drift on strict quantitative queries.
-- **Multi-Provider LLM Abstraction**: Easily switch between **OpenAI (GPT-4o)**, **Anthropic Claude (Sonnet 3.5)**, and **Local Ollama (Llama 3.2)** via environment configuration.
+- **Local Offline Inference via Ollama**: Runs 100% locally on **Ollama (Qwen 2.5 7B)** with zero cloud API keys, zero internet dependencies for inference, and complete data privacy.
 - **Persistent Trace & Conversation Store**: Stores sanitized query execution traces in SQLite accessible via `GET /api/v1/query/{request_id}/trace` for developer diagnostics and observability.
 - **Internal Service Authentication**: Configurable `SERVICE_API_KEY` supporting `X-API-Key` or `Authorization: Bearer <key>` headers to protect service-to-service communication.
 - **Backend Integration Ready**: Includes a reference Python client (`integration/backend_client_example.py`) demonstrating health checks, uploads, hybrid queries, and trace inspection for other backend teams.
@@ -93,11 +93,9 @@ xcel/
 │   │   │   ├── vector_store.py             # ChromaDB multi-collection manager
 │   │   │   ├── retrieval_service.py        # Multi-stage query analyzer & retriever
 │   │   │   ├── reranking_service.py        # Lexical & semantic re-ranking engine
-│   │   │   ├── llm_base.py                 # Abstract Base Class & common prompts
-│   │   │   ├── llm_factory.py              # Factory for active LLM provider
-│   │   │   ├── openai_service.py           # OpenAI API client (GPT-4o)
-│   │   │   ├── claude_service.py           # Anthropic Claude SDK client
-│   │   │   ├── ollama_service.py           # Local Ollama REST client
+│   │   │   ├── llm_base.py                 # Abstract Base Class, prompt builder & ConversationManager
+│   │   │   ├── llm_factory.py              # Factory for active LLM provider (Ollama)
+│   │   │   ├── ollama_service.py           # Local Ollama REST client (qwen2.5:7b)
 │   │   │   ├── trace_service.py            # SQLite persistent trace & history store
 │   │   │   └── document_service.py         # Document registry and storage lifecycle
 │   │   ├── models/
@@ -127,14 +125,12 @@ xcel/
 │   ├── processed/                          # SQLite DB, DataFrames, and registry JSON
 │   └── samples/                            # Sample dbms.pdf & students.csv datasets
 │
-├── tests/                                  # 32 automated unit, integration & eval tests
+├── tests/                                  # 28 automated unit, integration & eval tests
 │   ├── test_phase2_standardization.py      # Standardized v1 endpoints, auth, persistence
 │   ├── test_ollama.py                      # Local Ollama provider tests
 │   ├── test_pdf.py                         # PDF parsing & chunking tests
 │   ├── test_csv.py                         # CSV schema detection & filtering tests
 │   ├── test_retrieval.py                   # Hybrid multi-source retrieval tests
-│   ├── test_openai.py                      # OpenAI client tests
-│   ├── test_claude.py                      # Claude client tests
 │   ├── test_api.py                         # Legacy API tests
 │   ├── test_eval.py                        # Hit@K and MRR evaluation runner
 │   └── evaluation_questions.json           # Benchmark evaluation dataset
@@ -185,20 +181,6 @@ The template is pre-configured for local **Ollama** using `qwen2.5:7b` (no cloud
 LLM_PROVIDER=ollama
 OLLAMA_BASE_URL=http://localhost:11434
 OLLAMA_MODEL=qwen2.5:7b
-```
-
-#### Option B: OpenAI (Cloud Alternative)
-```env
-LLM_PROVIDER=openai
-OPENAI_API_KEY=sk-proj-your-openai-key-here
-OPENAI_MODEL=gpt-4o
-```
-
-#### Option C: Anthropic Claude (Cloud Alternative)
-```env
-LLM_PROVIDER=claude
-ANTHROPIC_API_KEY=sk-ant-api03-your-anthropic-key-here
-CLAUDE_MODEL=claude-3-5-sonnet-20241022
 ```
 
 #### Microservice Authentication (Optional)
@@ -280,7 +262,7 @@ print("Latency:", trace["total_latency_ms"], "ms")
 
 ## 7. Running the Test Suite
 
-Execute all 32 automated tests:
+Execute all 28 automated tests:
 
 ```bash
 source .venv/bin/activate
@@ -292,7 +274,7 @@ Run retrieval evaluation benchmark (Hit@5 and MRR):
 ```bash
 pytest tests/test_eval.py -s
 ```
-*(Current results: **Hit@5 = 80.00%**, **MRR = 0.8000**)*
+*(Current results: **Hit@5 = 100.00%**, **MRR = 1.0000**)*
 
 ---
 

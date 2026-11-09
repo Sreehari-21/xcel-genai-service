@@ -23,7 +23,7 @@ External applications (such as a core enterprise backend) communicate with the G
                                         ▼                           ▼
                              ┌─────────────────────┐     ┌─────────────────────┐
                              │  ChromaDB Vectors   │     │ LLM Provider Engine │
-                             │  (Local Persistent) │     │ OpenAI/Claude/Ollama│
+                             │  (Local Persistent) │     │ Ollama (qwen2.5:7b) │
                              └─────────────────────┘     └─────────────────────┘
 ```
 

@@ -28,7 +28,7 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(
     title="Xcel RAG Service — Multi-Modal Knowledge Engine (PDF + CSV)",
-    description="Production-ready GenAI microservice supporting PDF and CSV ingestion, structure-aware chunking, hybrid semantic & relational retrieval, and multi-provider LLM generation (OpenAI, Claude, Ollama).",
+    description="Production-ready GenAI microservice supporting PDF and CSV ingestion, structure-aware chunking, hybrid semantic & relational retrieval, and local LLM generation via Ollama (Qwen 2.5 7B).",
     version=settings.service_version,
     lifespan=lifespan
 )

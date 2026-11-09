@@ -1,11 +1,9 @@
-import os
 from typing import List, Dict, Any, Optional
 from fastapi import HTTPException
 import httpx
 from app.core.config import settings
 from app.core.logging import log_event
-from app.services.llm_base import BaseLLMService, SYSTEM_PROMPT
-from app.services.openai_service import ConversationManager
+from app.services.llm_base import BaseLLMService, SYSTEM_PROMPT, ConversationManager
 
 class OllamaService(BaseLLMService):
     """Local LLM service powered by Ollama REST API (qwen2.5:7b)."""
