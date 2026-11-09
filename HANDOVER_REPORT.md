@@ -2,7 +2,7 @@
 
 **Document Version:** 2.0.0-final  
 **Date:** November 2026  
-**Author:** Senior AI/ML Engineer & Backend Architect  
+**Author:** Sreehari 
 **Service:** Xcel RAG GenAI Microservice  
 **Runtime Architecture:** Python 3.11 + FastAPI + ChromaDB + Local Ollama (`qwen2.5:7b`)  
 
