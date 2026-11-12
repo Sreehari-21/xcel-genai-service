@@ -30,7 +30,9 @@ async def upload_document(file: UploadFile = File(...)):
         row_count=metadata.row_count,
         chunk_count=metadata.chunk_count,
         file_size=metadata.file_size,
-        upload_time=metadata.upload_time
+        upload_time=metadata.upload_time,
+        content_hash=metadata.content_hash,
+        is_duplicate=metadata.is_duplicate
     )
 
 @router.get("", response_model=DocumentListResponse, dependencies=[Depends(verify_api_key)])
