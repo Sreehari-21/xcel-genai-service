@@ -31,6 +31,10 @@ class ChunkMetadata(BaseModel):
             
         if self.additional_meta:
             for k, v in self.additional_meta.items():
+                if v is None:
+                    continue
+                if hasattr(v, "item"):
+                    v = v.item()
                 if isinstance(v, (str, int, float, bool)):
                     data[k] = v
                 else:

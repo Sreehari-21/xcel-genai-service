@@ -105,10 +105,21 @@ class UnifiedRetrievalService:
         }
 
         # Stage 2: Vector retrieval per source type
+        # Build clean metadata filters for ChromaDB collections (preserving document_id, document_name, page_number, etc.)
+        base_meta_filters: Dict[str, Any] = {}
+        if filters:
+            for k, v in filters.items():
+                if k == "source_type" or v is None:
+                    continue
+                if k == "file_name":
+                    base_meta_filters["document_name"] = v
+                else:
+                    base_meta_filters[k] = v
+
         # 1. PDF retrieval (if not csv_only)
         if analysis.query_type != "csv_only":
             fetch_pdf_k = max(top_k * 4, 15)
-            pdf_filters = {"document_name": filters.get("document_name")} if filters and "document_name" in filters else None
+            pdf_filters = dict(base_meta_filters) if base_meta_filters else None
             pdf_chunks = vector_store.query(
                 collection_name=ChromaVectorStore.COLLECTION_PDF,
                 query_embedding=query_embedding,
@@ -121,7 +132,7 @@ class UnifiedRetrievalService:
         # 2. CSV Vector retrieval (if not pdf_only)
         if analysis.query_type != "pdf_only":
             fetch_csv_k = max(top_k * 3, 10)
-            csv_filters = {"document_name": filters.get("file_name")} if filters and "file_name" in filters else None
+            csv_filters = dict(base_meta_filters) if base_meta_filters else None
             csv_chunks = vector_store.query(
                 collection_name=ChromaVectorStore.COLLECTION_CSV_RECORDS,
                 query_embedding=query_embedding,
@@ -132,19 +143,26 @@ class UnifiedRetrievalService:
             candidates.extend(csv_chunks)
 
             # 3. CSV Schemas retrieval (crucial for structural schema questions)
+            schema_filter_keys = {k: v for k, v in base_meta_filters.items() if k in ("document_id", "document_name")}
             schema_chunks = vector_store.query(
                 collection_name=ChromaVectorStore.COLLECTION_CSV_SCHEMAS,
                 query_embedding=query_embedding,
                 top_k=2,
-                filters=None
+                filters=schema_filter_keys or None
             )
             pipeline_trace["schema_candidates_count"] = len(schema_chunks)
             candidates.extend(schema_chunks)
 
             # 4. Structured Pandas Retrieval for numerical/categorical filters
-            # Check all registered CSV documents
             registered_docs = document_service.list_documents()
-            csv_docs = [d for d in registered_docs if d.file_type == "csv"]
+            csv_docs = [d for d in registered_docs if d.file_type == "csv" and d.processing_status == "completed"]
+            if base_meta_filters.get("document_id"):
+                target_id = base_meta_filters["document_id"]
+                csv_docs = [d for d in csv_docs if d.document_id == target_id]
+            if base_meta_filters.get("document_name"):
+                target_name = base_meta_filters["document_name"]
+                csv_docs = [d for d in csv_docs if d.file_name == target_name]
+
             structured_matches = []
             for d in csv_docs:
                 matches = structured_retriever.retrieve(
@@ -156,7 +174,8 @@ class UnifiedRetrievalService:
                 structured_matches.extend(matches)
 
             pipeline_trace["structured_candidates_count"] = len(structured_matches)
-            candidates.extend(structured_matches)
+            # Prepend structured matches so deduplication keeps higher-confidence structured results
+            candidates = structured_matches + candidates
 
         # Deduplicate candidates by chunk id
         seen_ids = set()
@@ -166,8 +185,9 @@ class UnifiedRetrievalService:
                 seen_ids.add(c.id)
                 deduped_candidates.append(c)
 
-        # Stage 3: Reranking
-        all_reranked = reranking_service.rerank(query, deduped_candidates, top_k=max(top_k * 2, 10))
+        # Stage 3: Reranking (score all candidates before modality balancing so neither PDF nor CSV gets starved)
+        rerank_limit = len(deduped_candidates) if analysis.query_type == "mixed" else max(top_k * 2, 10)
+        all_reranked = reranking_service.rerank(query, deduped_candidates, top_k=rerank_limit)
 
         # For mixed / hybrid queries requiring multiple modalities, ensure balanced source representation
         if analysis.query_type == "mixed" and top_k > 2:

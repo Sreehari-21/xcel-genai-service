@@ -1,6 +1,7 @@
 import os
 import pytest
 import pandas as pd
+from app.core.config import settings
 from app.services.csv_service import csv_service
 from app.services.structured_data_retriever import structured_retriever
 
@@ -15,7 +16,11 @@ def sample_csv_path(tmp_path):
 105,Sneha,6,DBMS,92
 """
     csv_file.write_text(data)
-    return str(csv_file)
+    yield str(csv_file)
+    structured_retriever.invalidate_cache("csv_test_1")
+    processed_csv = os.path.join(settings.processed_dir, "csv_test_1.csv")
+    if os.path.exists(processed_csv):
+        os.remove(processed_csv)
 
 def test_csv_schema_and_record_generation(sample_csv_path):
     processed = csv_service.parse_csv(

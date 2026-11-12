@@ -1,10 +1,13 @@
 import os
 import re
+import threading
+import time
 from typing import List, Dict, Any, Tuple
 import pandas as pd
 from app.core.config import settings
 from app.core.logging import log_event
 from app.models.chunk import Chunk, ChunkMetadata
+from app.services.structured_data_retriever import structured_retriever
 
 class ProcessedCSV:
     def __init__(
@@ -152,6 +155,8 @@ class CSVService:
             additional_meta = {"row_number": row_num}
             for col in df.columns[:10]:  # Up to 10 key columns for metadata filtering
                 val = row_dict[col]
+                if hasattr(val, "item"):
+                    val = val.item()
                 if isinstance(val, (int, float, str, bool)):
                     additional_meta[f"col_{col}"] = val
 
@@ -171,9 +176,20 @@ class CSVService:
                 )
             )
 
-        # 6. Save cleaned dataframe to processed folder for structured query engine
+        # 6. Atomically save cleaned dataframe to processed folder for structured query engine
+        os.makedirs(settings.processed_dir, exist_ok=True)
         processed_path = os.path.join(settings.processed_dir, f"{document_id}.csv")
-        df.to_csv(processed_path, index=False)
+        tmp_path = f"{processed_path}.{threading.get_ident()}.tmp"
+        df.to_csv(tmp_path, index=False)
+        for attempt in range(5):
+            try:
+                os.replace(tmp_path, processed_path)
+                break
+            except PermissionError:
+                if attempt == 4:
+                    raise
+                time.sleep(0.02 * (attempt + 1))
+        structured_retriever.invalidate_cache(document_id)
 
         log_event(
             "CSV PROCESSING",

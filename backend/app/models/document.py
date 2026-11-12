@@ -1,19 +1,21 @@
 from typing import Optional, List
 from pydantic import BaseModel, Field
-from datetime import datetime
+from datetime import datetime, timezone
 
 class DocumentMetadata(BaseModel):
     document_id: str
     file_name: str
     file_type: str  # 'pdf' or 'csv'
     file_size: int
-    upload_time: str = Field(default_factory=lambda: datetime.utcnow().isoformat())
+    upload_time: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
     processing_status: str = "processing"  # 'processing', 'completed', 'failed'
     chunk_count: int = 0
     row_count: Optional[int] = None
     page_count: Optional[int] = None
     error_message: Optional[str] = None
     schema_summary: Optional[str] = None
+    content_hash: Optional[str] = None
+    is_duplicate: bool = False
 
 class DocumentUploadResponse(BaseModel):
     document_id: str
@@ -25,6 +27,8 @@ class DocumentUploadResponse(BaseModel):
     chunk_count: int
     file_size: Optional[int] = None
     upload_time: Optional[str] = None
+    content_hash: Optional[str] = None
+    is_duplicate: bool = False
 
 class DocumentListResponse(BaseModel):
     documents: List[DocumentMetadata]

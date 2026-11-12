@@ -2,6 +2,9 @@ from fastapi import APIRouter
 from app.core.config import settings
 from app.services.document_service import document_service
 from app.services.vector_store import vector_store
+from app.services.embedding_service import embedding_service
+from app.services.structured_data_retriever import structured_retriever
+from app.services.trace_service import trace_service
 
 router = APIRouter(tags=["Health"])
 
@@ -30,7 +33,13 @@ def get_health_status():
             "type": "chromadb",
             "stats": vector_stats
         },
-        "total_documents": len(document_service.list_documents())
+        "total_documents": len(document_service.list_documents()),
+        "storage_metrics": {
+            "embedding": embedding_service.get_stats(),
+            "vector_store": vector_store.get_performance_metrics(),
+            "structured_retriever": structured_retriever.get_stats(),
+            "trace_db": trace_service.get_stats(),
+        }
     }
 
 @router.get("/health")

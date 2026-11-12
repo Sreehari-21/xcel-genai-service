@@ -67,7 +67,9 @@ def setup_hybrid_data(tmp_path_factory):
         )
     )
 
-    return {"pdf_id": "doc_hybrid_pdf", "csv_id": "csv_hybrid_data"}
+    yield {"pdf_id": "doc_hybrid_pdf", "csv_id": "csv_hybrid_data"}
+    document_service.delete_document("doc_hybrid_pdf")
+    document_service.delete_document("csv_hybrid_data")
 
 def test_pdf_retrieval(setup_hybrid_data):
     top_chunks, context, citations, trace = retrieval_service.retrieve(
